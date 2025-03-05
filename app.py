@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins="*")
 
 # Configuration for Neon PostgreSQL
 app.config["SQLALCHEMY_DATABASE_URI"] = (
@@ -89,10 +89,11 @@ def index():
 
 @app.route("/register", methods=["POST"])
 def register():
-    data = request.get_json()
-    name = data.get("name")
-    email = data.get("email")
-    password = data.get("password")
+    data = request.json
+    print(data)
+    name = data["name"]
+    email = data["email"]
+    password = data["password"]
 
     if not name or not email or not password:
         return jsonify({"message": "Missing fields"}), 400
