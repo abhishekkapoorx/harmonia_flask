@@ -138,15 +138,22 @@ def protected():
     return jsonify({"message": f'Hello {current_user["email"]}'}), 200
 
 
+@app.route("/chat", methods=["POST"])
+async def chats():
+    data = request.json
+    user_input = data.get("input", "")
+
+    response = await chat(user_input)
+
+    try:
+        return jsonify(response)
+    except TypeError:
+        return jsonify({"response": str(response)})
+
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
     app.run(debug=os.environ.get("DEPLOYMENT"))
 
 
-@app.route("/chat", methods=["POST"])
-async def chat():
-    data = request.json
-    user_input = data["input"]
-    response = await chat(user_input)
-    return jsonify({"response": response})
