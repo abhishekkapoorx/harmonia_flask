@@ -11,7 +11,8 @@ import os
 import datetime
 from flask_cors import CORS
 from dotenv import load_dotenv
-from chatbot import chat
+from chatbot import chat, get_meal_plan
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -83,10 +84,10 @@ class UserDetail(db.Model):
         return f"<UserDetail {self.user_id}>"
 
 
-
 @app.route("/")
 def index():
     return jsonify({"message": "Hello, World!"})
+
 
 @app.route("/register", methods=["POST"])
 def register():
@@ -146,14 +147,26 @@ async def chats():
     response = await chat(user_input)
 
     try:
-        return jsonify(response)
+        return jsonify(response.content)
     except TypeError:
-        return jsonify({"response": str(response)})
+        return jsonify({"response": str(response.content)})
+
+
+@app.route("/meal-planner", methods=["GET"])
+async def meal_planner(request):
+    data = await get_meal_plan(
+        age=25,
+        weight=70,
+        height=175,
+        veg_or_nonveg="veg",
+        disease="pcos",
+        region="Indian",
+        allergics="peanuts",
+    )
+    return jsonify({"response" : str(data)})
 
 
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
     app.run(debug=os.environ.get("DEPLOYMENT"))
-
-
