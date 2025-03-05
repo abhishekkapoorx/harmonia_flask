@@ -82,6 +82,11 @@ class UserDetail(db.Model):
         return f"<UserDetail {self.user_id}>"
 
 
+
+@app.route("/")
+def index():
+    return jsonify({"message": "Hello, World!"})
+
 @app.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
