@@ -11,6 +11,7 @@ import os
 import datetime
 from flask_cors import CORS
 from dotenv import load_dotenv
+from chatbot import chat
 load_dotenv()
 
 app = Flask(__name__)
@@ -141,3 +142,11 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
     app.run(debug=os.environ.get("DEPLOYMENT"))
+
+
+@app.route("/chat", methods=["POST"])
+async def chat():
+    data = request.json
+    user_input = data["input"]
+    response = await chat(user_input)
+    return jsonify({"response": response})
