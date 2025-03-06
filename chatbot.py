@@ -72,4 +72,4 @@ def get_meal_plan(age, weight, height, veg_or_nonveg, disease, region, allergics
 
     results = chain_meal.run(input_data)
     
-    return results 
+    return results

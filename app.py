@@ -163,7 +163,10 @@ async def meal_planner(request):
         region="Indian",
         allergics="peanuts",
     )
-    return jsonify({"response" : str(data)})
+    try:
+        return jsonify(data.content)
+    except TypeError:
+        return jsonify({"response": str(data.content)})
 
 
 if __name__ == "__main__":
