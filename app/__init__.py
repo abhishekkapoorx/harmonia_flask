@@ -45,7 +45,8 @@ def create_app(config_name="default"):
     @jwt.user_lookup_loader
     def user_lookup_callback(_jwt_header, jwt_data):
         identity = jwt_data["sub"]
-        return User.query.filter_by(id=identity).one_or_none()
+        print("x-x"*100, identity, "x-x"*100)
+        return User.query.filter_by(email=identity).one_or_none()
     
 
     @jwt.expired_token_loader
