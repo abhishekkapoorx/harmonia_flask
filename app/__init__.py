@@ -51,27 +51,27 @@ def create_app(config_name="default"):
 
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_data):
-        return {"message": "Token has expired"}, 401
+        return {"msg": "Token has expired"}, 401
 
     @jwt.invalid_token_loader
     def invalid_token_callback(error_string):
-        return {"message": "Invalid token"}, 401
+        return {"msg": "Invalid token"}, 401
 
     @jwt.unauthorized_loader
     def missing_token_callback(error_string):
-        return {"message": "Authorization header is missing"}, 401
+        return {"msg": "Authorization header is missing"}, 401
 
     @jwt.needs_fresh_token_loader
     def fresh_token_callback(jwt_header, jwt_data):
-        return {"message": "Fresh token required"}, 401
+        return {"msg": "Fresh token required"}, 401
 
     @jwt.revoked_token_loader
     def revoked_token_callback(jwt_header, jwt_data):
-        return {"message": "Token has been revoked"}, 401
+        return {"msg": "Token has been revoked"}, 401
 
     @jwt.token_verification_failed_loader
     def verification_failed_callback(jwt_header, jwt_data):
-        return {"message": "Token verification failed"}, 401
+        return {"msg": "Token verification failed"}, 401
 
     @jwt.token_in_blocklist_loader
     def check_if_token_revoked(jwt_header, jwt_data):
@@ -84,6 +84,6 @@ def create_app(config_name="default"):
     # Root route
     @app.route("/")
     def index():
-        return {"message": "Welcome to the Harmonia API"}, 200
+        return {"msg": "Welcome to the Harmonia API"}, 200
 
     return app

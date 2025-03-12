@@ -33,8 +33,9 @@ class User(db.Model):
     def to_dict(self):
         """Convert user to dictionary."""
         return {
-            "id": self.id,
+            "user_id": self.id,
             "name": self.name,
             "email": self.email,
+            "role": self.role,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

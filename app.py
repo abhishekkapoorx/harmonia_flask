@@ -86,7 +86,7 @@ class UserDetail(db.Model):
 
 @app.route("/")
 def index():
-    return jsonify({"message": "Hello, World!"})
+    return jsonify({"msg": "Hello, World!"})
 
 def validate_email(email):
     import re
@@ -129,7 +129,7 @@ def validate_numeric_string(value, min_val=None, max_val=None):
 def handle_exception(e):
     # Log the error for debugging
     app.logger.error(f"Unhandled exception: {str(e)}")
-    return jsonify({"message": "An unexpected error occurred", "error": str(e)}), 500
+    return jsonify({"msg": "An unexpected error occurred", "error": str(e)}), 500
 
 
 @app.route("/register", methods=["POST"])
@@ -137,7 +137,7 @@ def register():
     try:
         data = request.json
         if not data:
-            return jsonify({"message": "No data provided"}), 400
+            return jsonify({"msg": "No data provided"}), 400
         
         # Extract fields with defaults to avoid KeyError
         name = data.get("name", "")
@@ -146,19 +146,19 @@ def register():
 
         # Validate all fields
         if not name or not email or not password:
-            return jsonify({"message": "Missing required fields"}), 400
+            return jsonify({"msg": "Missing required fields"}), 400
         
         if not validate_name(name):
-            return jsonify({"message": "Invalid name format"}), 400
+            return jsonify({"msg": "Invalid name format"}), 400
         
         if not validate_email(email):
-            return jsonify({"message": "Invalid email format"}), 400
+            return jsonify({"msg": "Invalid email format"}), 400
         
         if not validate_password(password):
-            return jsonify({"message": "Password must be at least 8 characters and contain at least one letter and one number"}), 400
+            return jsonify({"msg": "Password must be at least 8 characters and contain at least one letter and one number"}), 400
 
         if User.query.filter_by(email=email).first():
-            return jsonify({"message": "Email already registered"}), 400
+            return jsonify({"msg": "Email already registered"}), 400
 
         new_user = User(name=name, email=email, password=password)
         access_token = create_access_token(identity={"email": new_user.email})
@@ -168,13 +168,13 @@ def register():
         db.session.commit()
 
         return (
-            jsonify({"message": "Registered successfully", "access_token": access_token, "refresh_token": refresh_token}),
+            jsonify({"msg": "Registered successfully", "access_token": access_token, "refresh_token": refresh_token}),
             201,
         )
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Registration error: {str(e)}")
-        return jsonify({"message": "Registration failed", "error": str(e)}), 500
+        return jsonify({"msg": "Registration failed", "error": str(e)}), 500
 
 
 @app.route("/login", methods=["POST"])
@@ -182,38 +182,38 @@ def login():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({"message": "No data provided"}), 400
+            return jsonify({"msg": "No data provided"}), 400
             
         email = data.get("email", "")
         password = data.get("password", "")
 
         if not email or not password:
-            return jsonify({"message": "Email and password are required"}), 400
+            return jsonify({"msg": "Email and password are required"}), 400
             
         if not validate_email(email):
-            return jsonify({"message": "Invalid email format"}), 400
+            return jsonify({"msg": "Invalid email format"}), 400
 
         user = User.query.filter_by(email=email).first()
 
         if not user or not check_password_hash(user.password, password):
-            return jsonify({"message": "Invalid credentials"}), 401
+            return jsonify({"msg": "Invalid credentials"}), 401
 
         access_token = create_access_token(identity={"email": user.email})
         refresh_token = create_refresh_token(identity={"email": user.email})
         return (
-            jsonify({"message": "Logged in successfully", "access_token": access_token, "refresh_token": refresh_token}),
+            jsonify({"msg": "Logged in successfully", "access_token": access_token, "refresh_token": refresh_token}),
             200,
         )
     except Exception as e:
         app.logger.error(f"Login error: {str(e)}")
-        return jsonify({"message": "Login failed", "error": str(e)}), 500
+        return jsonify({"msg": "Login failed", "error": str(e)}), 500
 
 
 @app.route("/protected", methods=["GET"])
 @jwt_required()
 def protected():
     current_user = get_jwt_identity()
-    return jsonify({"message": f'Hello {current_user["email"]}'}), 200
+    return jsonify({"msg": f'Hello {current_user["email"]}'}), 200
 
 
 @app.route("/chat", methods=["POST"])
@@ -221,18 +221,18 @@ async def chats():
     try:
         data = request.json
         if not data:
-            return jsonify({"message": "No data provided"}), 400
+            return jsonify({"msg": "No data provided"}), 400
             
         user_input = data.get("input")
         if not user_input or not isinstance(user_input, str):
-            return jsonify({"message": "Valid input text is required"}), 400
+            return jsonify({"msg": "Valid input text is required"}), 400
 
         response = await chat(user_input)
 
         return jsonify({"response": str(response.content)})
     except Exception as e:
         app.logger.error(f"Chat error: {str(e)}")
-        return jsonify({"message": "Chat processing failed", "error": str(e)}), 500
+        return jsonify({"msg": "Chat processing failed", "error": str(e)}), 500
 
 
 @app.route("/meal-planner", methods=["GET", "POST"])
@@ -242,7 +242,7 @@ async def meal_planner():
         if request.method == "POST":
             data = request.json
             if not data:
-                return jsonify({"message": "No data provided"}), 400
+                return jsonify({"msg": "No data provided"}), 400
         else:
             data = request.args.to_dict()
             
@@ -257,17 +257,17 @@ async def meal_planner():
         
         # Validate numeric fields
         if not validate_numeric_string(age, 1, 120):
-            return jsonify({"message": "Invalid age value"}), 400
+            return jsonify({"msg": "Invalid age value"}), 400
             
         if not validate_numeric_string(weight, 20, 300):
-            return jsonify({"message": "Invalid weight value"}), 400
+            return jsonify({"msg": "Invalid weight value"}), 400
             
         if not validate_numeric_string(height, 50, 300):
-            return jsonify({"message": "Invalid height value"}), 400
+            return jsonify({"msg": "Invalid height value"}), 400
             
         # Validate diet type
         if veg_or_nonveg not in ["veg", "nonveg"]:
-            return jsonify({"message": "Diet type must be 'veg' or 'nonveg'"}), 400
+            return jsonify({"msg": "Diet type must be 'veg' or 'nonveg'"}), 400
 
         meal_plan = await get_meal_plan(
             age=int(age),
@@ -282,7 +282,7 @@ async def meal_planner():
         return jsonify(meal_plan)
     except Exception as e:
         app.logger.error(f"Meal planner error: {str(e)}")
-        return jsonify({"message": "Meal planning failed", "error": str(e)}), 500
+        return jsonify({"msg": "Meal planning failed", "error": str(e)}), 500
 
 
 @app.route("/user-details", methods=["POST"])
@@ -293,11 +293,11 @@ def add_user_details():
         user = User.query.filter_by(email=current_user["email"]).first()
         
         if not user:
-            return jsonify({"message": "User not found"}), 404
+            return jsonify({"msg": "User not found"}), 404
             
         data = request.json
         if not data:
-            return jsonify({"message": "No data provided"}), 400
+            return jsonify({"msg": "No data provided"}), 400
             
         # Required fields validation
         required_fields = [
@@ -311,22 +311,22 @@ def add_user_details():
         
         missing_fields = [field for field in required_fields if field not in data or not data[field]]
         if missing_fields:
-            return jsonify({"message": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+            return jsonify({"msg": f"Missing required fields: {', '.join(missing_fields)}"}), 400
             
         # Validate numeric fields
         if not validate_numeric_string(data["age"], 1, 120):
-            return jsonify({"message": "Invalid age value"}), 400
+            return jsonify({"msg": "Invalid age value"}), 400
             
         if not validate_numeric_string(data["height"]):
-            return jsonify({"message": "Invalid height value"}), 400
+            return jsonify({"msg": "Invalid height value"}), 400
             
         if not validate_numeric_string(data["weight"]):
-            return jsonify({"message": "Invalid weight value"}), 400
+            return jsonify({"msg": "Invalid weight value"}), 400
             
         # Check for existing user details
         existing_details = UserDetail.query.filter_by(user_id=user.id).first()
         if existing_details:
-            return jsonify({"message": "User details already exist"}), 400
+            return jsonify({"msg": "User details already exist"}), 400
             
         # Create new user details
         user_details = UserDetail(
@@ -361,11 +361,11 @@ def add_user_details():
         db.session.add(user_details)
         db.session.commit()
         
-        return jsonify({"message": "User details added successfully"}), 201
+        return jsonify({"msg": "User details added successfully"}), 201
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Add user details error: {str(e)}")
-        return jsonify({"message": "Failed to add user details", "error": str(e)}), 500
+        return jsonify({"msg": "Failed to add user details", "error": str(e)}), 500
 
 
 @app.route("/user-details", methods=["GET"])
@@ -376,12 +376,12 @@ def get_user_details():
         user = User.query.filter_by(email=current_user["email"]).first()
         
         if not user:
-            return jsonify({"message": "User not found"}), 404
+            return jsonify({"msg": "User not found"}), 404
             
         user_details = UserDetail.query.filter_by(user_id=user.id).first()
         
         if not user_details:
-            return jsonify({"message": "User details not found"}), 404
+            return jsonify({"msg": "User details not found"}), 404
             
         # Convert user details to dictionary
         details_dict = {
@@ -416,7 +416,7 @@ def get_user_details():
         return jsonify(details_dict), 200
     except Exception as e:
         app.logger.error(f"Get user details error: {str(e)}")
-        return jsonify({"message": "Failed to retrieve user details", "error": str(e)}), 500
+        return jsonify({"msg": "Failed to retrieve user details", "error": str(e)}), 500
 
 
 if __name__ == "__main__":

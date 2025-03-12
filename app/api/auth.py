@@ -24,7 +24,7 @@ def register():
     try:
         data = request.json
         if not data:
-            return jsonify({"message": "No data provided"}), 400
+            return jsonify({"msg": "No data provided"}), 400
 
         # Extract fields with defaults
         name = data.get("name", "")
@@ -33,26 +33,26 @@ def register():
 
         # Validate all fields
         if not name or not email or not password:
-            return jsonify({"message": "Missing required fields"}), 400
+            return jsonify({"msg": "Missing required fields"}), 400
 
         if not validate_name(name):
-            return jsonify({"message": "Invalid name format"}), 400
+            return jsonify({"msg": "Invalid name format"}), 400
 
         if not validate_email(email):
-            return jsonify({"message": "Invalid email format"}), 400
+            return jsonify({"msg": "Invalid email format"}), 400
 
         if not validate_password(password):
             return (
                 jsonify(
                     {
-                        "message": "Password must be at least 8 characters and contain at least one letter and one number"
+                        "msg": "Password must be at least 8 characters and contain at least one letter and one number"
                     }
                 ),
                 400,
             )
 
         if User.query.filter_by(email=email).first():
-            return jsonify({"message": "Email already registered"}), 400
+            return jsonify({"msg": "Email already registered"}), 400
 
         new_user = User(name=name, email=email, password=password)
         access_token = create_access_token(identity=email)
@@ -64,9 +64,12 @@ def register():
         return (
             jsonify(
                 {
-                    "message": "Registered successfully",
-                    "access_token": access_token,
-                    "refresh_token": refresh_token,
+                    "msg": "Registered successfully",
+                    "data": {
+                        "access_token": access_token,
+                        "refresh_token": refresh_token,
+                        "user": new_user.to_dict(),
+                    }
                 }
             ),
             201,
@@ -74,7 +77,7 @@ def register():
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"message": "Registration failed", "error": str(e)}), 500
+        return jsonify({"msg": "Registration failed", "error": str(e)}), 500
 
 
 @auth_bp.route("/login", methods=["POST"])
@@ -83,21 +86,21 @@ def login():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({"message": "No data provided"}), 400
+            return jsonify({"msg": "No data provided"}), 400
 
         email = data.get("email", "")
         password = data.get("password", "")
 
         if not email or not password:
-            return jsonify({"message": "Email and password are required"}), 400
+            return jsonify({"msg": "Email and password are required"}), 400
 
         if not validate_email(email):
-            return jsonify({"message": "Invalid email format"}), 400
+            return jsonify({"msg": "Invalid email format"}), 400
 
         user = User.query.filter_by(email=email).first()
 
         if not user or not user.check_password(password):
-            return jsonify({"message": "Invalid credentials"}), 401
+            return jsonify({"msg": "Invalid credentials"}), 401
 
         access_token = create_access_token(identity=email)
         refresh_token = create_refresh_token(identity=email)
@@ -105,16 +108,19 @@ def login():
         return (
             jsonify(
                 {
-                    "message": "Logged in successfully",
-                    "access_token": access_token,
-                    "refresh_token": refresh_token,
+                    "msg": "Logged in successfully",
+                    "data": {
+                        "access_token": access_token,
+                        "refresh_token": refresh_token,
+                        "user": user.to_dict(),
+                    }
                 }
             ),
             200,
         )
 
     except Exception as e:
-        return jsonify({"message": "Login failed", "error": str(e)}), 500
+        return jsonify({"msg": "Login failed", "error": str(e)}), 500
 
 
 @auth_bp.route("/protected", methods=["GET"])
@@ -123,4 +129,4 @@ def protected():
     """Test protected route."""
     get_identity = get_jwt_identity()
     user = current_user
-    return jsonify({"message": f"Hello {get_identity}", "user": user.to_dict()}), 200
+    return jsonify({"msg": f"Hello {get_identity}", "user": user.to_dict()}), 200
