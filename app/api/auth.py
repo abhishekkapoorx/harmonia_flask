@@ -8,9 +8,9 @@ from flask_jwt_extended import (
     jwt_required,
     get_jwt_identity
 )
-from ..models.user import User
-from ..extensions import db
-from ..utils.validators import validate_email, validate_password, validate_name
+from app.models.User import User
+from app.extensions import db
+from app.utils.validators import validate_email, validate_password, validate_name
 
 # Create blueprint
 auth_bp = Blueprint('auth', __name__)
