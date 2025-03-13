@@ -38,18 +38,18 @@ def register():
         if not validate_name(name):
             return jsonify({"msg": "Invalid name format"}), 400
 
-        if not validate_email(email):
-            return jsonify({"msg": "Invalid email format"}), 400
+        # if not validate_email(email):
+        #     return jsonify({"msg": "Invalid email format"}), 400
 
-        if not validate_password(password):
-            return (
-                jsonify(
-                    {
-                        "msg": "Password must be at least 8 characters and contain at least one letter and one number"
-                    }
-                ),
-                400,
-            )
+        # if not validate_password(password):
+            # return (
+            #     jsonify(
+            #         {
+            #             "msg": "Password must be at least 8 characters and contain at least one letter and one number"
+            #         }
+            #     ),
+            #     400,
+            # )
 
         if User.query.filter_by(email=email).first():
             return jsonify({"msg": "Email already registered"}), 400
@@ -88,14 +88,14 @@ def login():
         if not data:
             return jsonify({"msg": "No data provided"}), 400
 
-        email = data.get("email", "")
-        password = data.get("password", "")
+        email = data.get("email", "").strip()
+        password = data.get("password", "").strip()
 
         if not email or not password:
             return jsonify({"msg": "Email and password are required"}), 400
 
-        if not validate_email(email):
-            return jsonify({"msg": "Invalid email format"}), 400
+        # if not validate_email(email):
+        #     return jsonify({"msg": "Invalid email format"}), 400
 
         user = User.query.filter_by(email=email).first()
 

@@ -2,14 +2,15 @@
 User details model for storing health and lifestyle information.
 """
 
+from uuid import uuid4
 from app.extensions import db
 from datetime import datetime
 
 
 class UserDetail(db.Model):
     """User details model for storing health and lifestyle information."""
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
+    user_id = db.Column(db.String(36), db.ForeignKey("user.id"), nullable=False)
     user = db.relationship("User", backref=db.backref("details", lazy=True))
 
     # Basic Information
