@@ -5,8 +5,8 @@ from flask import Blueprint, request, jsonify
 
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from app.models.User import User
-from app.models.UserDetail import UserDetail
+from app.models import User
+from app.models import UserDetail
 from ..utils.validators import validate_numeric_string
 from chatbot import chat, get_meal_plan
 

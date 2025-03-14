@@ -5,9 +5,7 @@ Application factory module.
 from flask import Flask
 from flask_migrate import Migrate
 from app.extensions import init_extensions, jwt, db
-from app.api.auth import auth_bp
-from app.api.UserDetails import user_bp
-from app.api.chatbot import chatbot_bp
+from app.api import auth_bp, chatbot_bp, user_bp
 
 
 def create_app(config_name="default"):
@@ -37,16 +35,15 @@ def create_app(config_name="default"):
     app.register_blueprint(user_bp, url_prefix="/user")
     app.register_blueprint(chatbot_bp, url_prefix="/chatbot")
 
-
     # a protected route is accessed. This should return any python object on a
     # successful lookup, or None if the lookup failed for any reason (for example
     # if the user has been deleted from the database).
-    from app.models.User import User
+    from app.models import User
+
     @jwt.user_lookup_loader
     def user_lookup_callback(_jwt_header, jwt_data):
         identity = jwt_data["sub"]
         return User.query.filter_by(email=identity).one_or_none()
-    
 
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_data):
@@ -78,7 +75,6 @@ def create_app(config_name="default"):
         # Here you would check if the token is in your blocklist
         # For now, return False to indicate token is not revoked
         return False
-
 
     # Root route
     @app.route("/")

@@ -3,10 +3,10 @@ User routes blueprint.
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import current_user, jwt_required, get_jwt_identity
-from app.models.User import User
-from app.models.UserDetail import UserDetail
+from app.models import User
+from app.models import UserDetail
 from app.extensions import db
-from app.utils.validators import validate_numeric_string
+from app.utils import validate_numeric_string
 
 
 # Create blueprint
