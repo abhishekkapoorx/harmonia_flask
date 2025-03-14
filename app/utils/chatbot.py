@@ -1,21 +1,23 @@
+"""
+Chatbot routes blueprint.
+"""
+
 import os
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 from langchain_groq import ChatGroq
 from langchain.schema import HumanMessage, SystemMessage
-from langchain_groq import ChatGroq
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
+from langchain_core.output_parsers import JsonOutputParser
+import json
+from typing import List, Dict, Any
 
-groq_api_key = "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"
-
-
-# Initialize Groq Chat Model
-llm = ChatGroq(groq_api_key=groq_api_key, model_name="llama3-8b-8192")
-
-# Define System Instructions
-system_message = SystemMessage(
-    content="You are an AI health assistant for women, providing expert advice on health, diet, and well-being."
+# Initialize Groq Chat Model with correct parameters
+llm = ChatGroq(
+    api_key=SecretStr("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"),
+    model="llama3-8b-8192",
 )
+
 
 
 # Request model
@@ -24,65 +26,73 @@ class ChatRequest(BaseModel):
 
 
 async def chat(input, user_details_dict):
+    # Define System Instructions
+    system_message = SystemMessage(
+        content="You are an AI health assistant for women, providing expert advice on health, diet, and well-being."
+    )
     messages = [system_message, HumanMessage(content=input)]
     response = llm.invoke(messages)
-    return response
+    return response.content
 
 
-prompt_template_meal = PromptTemplate(
-    input_variables=[
-        "age",
-        "weight",
-        "height",
-        "veg_or_nonveg",
-        "disease",
-        "region",
-        "allergics",
-    ],
-    template="""You are a meal planning assistant. Generate a structured 7-day meal plan in JSON format based on the user's details:
-    
-    - Age: {age}
-    - Weight: {weight}
-    - Height: {height}
-    - Dietary Preference: {veg_or_nonveg}
-    - Health Conditions: {disease}
-    - Region: {region}
-    - Allergies: {allergics}
-
-    The JSON output should be structured like this:
-    {{
-      "Monday": {{
-        "Breakfast": [{{"meal": "Meal Name", "nutritional_value": "Calories, Proteins, etc."}}],
-        "Lunch": [{{"meal": "Meal Name", "nutritional_value": "Calories, Proteins, etc."}}],
-        "Dinner": [{{"meal": "Meal Name", "nutritional_value": "Calories, Proteins, etc."}}]
-      }},
-      "Tuesday": {{ ... }},
-      ...
-      "Sunday": {{ ... }}
-    }}
-
-    Ensure all values are correctly formatted and realistic.
-    and make sure that eggs are considered non-veg.
-    """,
-)
+# Define meal plan models
+class Meal(BaseModel):
+    """A single meal with nutritional information"""
+    meal: str
+    nutritional_value: str
 
 
-def get_meal_plan(age, weight, height, veg_or_nonveg, disease, region, allergics):
+class DayMeals(BaseModel):
+    """Meals for a single day"""
+    Breakfast: List[Meal]
+    Lunch: List[Meal]
+    Dinner: List[Meal]
+
+
+class MealPlan(BaseModel):
+    """A complete weekly meal plan"""
+    Monday: DayMeals
+    Tuesday: DayMeals
+    Wednesday: DayMeals
+    Thursday: DayMeals
+    Friday: DayMeals
+    Saturday: DayMeals
+    Sunday: DayMeals
+
+
+async def get_meal_plan(user_details_dict):
     """
     Fetches a personalized meal plan based on user health data using Groq API.
     """
-    chain_meal = LLMChain(llm=llm, prompt=prompt_template_meal)
+    try:
+        # Create JSON parser with the MealPlan schema
+        parser = JsonOutputParser(pydantic_object=MealPlan)
 
-    input_data = {
-        "age": age,
-        "weight": weight,
-        "height": height,
-        "veg_or_nonveg": veg_or_nonveg,
-        "disease": disease,
-        "region": region,
-        "allergics": allergics,
-    }
+        # Create prompt template with format instructions
+        prompt_template_meal = PromptTemplate(
+            input_variables=["user_details"],
+            partial_variables={"format_instructions": parser.get_format_instructions()},
+            template="""You are a meal planning assistant for a woman. Generate a structured 7-day meal plan in JSON format based on the user's details:
+            
+            {user_details}
 
-    results = chain_meal.run(input_data)
+            The JSON output should be structured like this:
+            {format_instructions}
 
-    return results
+            Ensure all values are correctly formatted and realistic.
+            Make sure that eggs are considered non-veg.
+            """,
+        )
+
+        # Create the chain using the | operator
+        chain = prompt_template_meal | llm | parser
+
+        # Invoke the chain with user details
+        response = chain.invoke({"user_details": json.dumps(user_details_dict)})
+
+        # Return the meal plan
+        return response
+    except json.JSONDecodeError:
+        return {"error": "Failed to parse meal plan response"}
+    except Exception as e:
+        return {"error": str(e)}
