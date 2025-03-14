@@ -11,7 +11,7 @@ from flask_jwt_extended import (
 import datetime
 from flask_cors import CORS
 from dotenv import load_dotenv
-from chatbot import chat, get_meal_plan
+from app.utils.chatbot import chat, get_meal_plan
 
 load_dotenv()
 
