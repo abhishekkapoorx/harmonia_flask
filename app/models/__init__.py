@@ -1,7 +1,7 @@
 """
 Models package initialization.
 """
-from .User import User
-from .UserDetail import UserDetail
+from .user import User
+from .user_detail import UserDetail
 
 __all__ = ['User', 'UserDetail']
