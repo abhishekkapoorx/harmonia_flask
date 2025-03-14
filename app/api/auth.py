@@ -78,6 +78,9 @@ def register():
     except Exception as e:
         db.session.rollback()
         return jsonify({"msg": "Registration failed", "error": str(e)}), 500
+    
+    finally:
+        db.session.close()
 
 
 @auth_bp.route("/login", methods=["POST"])
@@ -105,6 +108,7 @@ def login():
         access_token = create_access_token(identity=email)
         refresh_token = create_refresh_token(identity=email)
 
+
         return (
             jsonify(
                 {
@@ -121,6 +125,9 @@ def login():
 
     except Exception as e:
         return jsonify({"msg": "Login failed", "error": str(e)}), 500
+    
+    finally:
+        db.session.close()
 
 
 @auth_bp.route("/protected", methods=["GET"])

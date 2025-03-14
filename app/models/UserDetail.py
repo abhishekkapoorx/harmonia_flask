@@ -5,10 +5,18 @@ User details model for storing health and lifestyle information.
 from uuid import uuid4
 from app.extensions import db
 from datetime import datetime
+from sqlalchemy_serializer import SerializerMixin
 
 
-class UserDetail(db.Model):
+class UserDetail(db.Model, SerializerMixin):
     """User details model for storing health and lifestyle information."""
+    
+    # Serialization rules
+    serialize_rules = (
+        '-user.details',  # Prevent recursive serialization
+        '-user.password',  # Exclude user password
+    )
+    
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
     user_id = db.Column(db.String(36), db.ForeignKey("user.id"), nullable=False)
     user = db.relationship("User", backref=db.backref("details", lazy=True))
@@ -49,6 +57,12 @@ class UserDetail(db.Model):
     fertilityTreatments = db.Column(db.String(255), nullable=True)
 
     createdAt = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __init__(self, **kwargs):
+        """Initialize UserDetail with provided parameters."""
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
 
     def to_dict(self):
         """Convert user details to dictionary."""

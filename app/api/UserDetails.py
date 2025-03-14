@@ -18,12 +18,15 @@ def add_user_details():
     """Add details for the authenticated user."""
     try:
         current_user = get_jwt_identity()
-        user = User.query.filter_by(email=current_user["email"]).first()
+        user = User.query.filter_by(email=current_user).first()
+
+
+        print(user)
         
         if not user:
             return jsonify({"msg": "User not found"}), 404
             
-        data = request.json
+        data = request.get_json()
         if not data:
             return jsonify({"msg": "No data provided"}), 400
             
@@ -37,50 +40,50 @@ def add_user_details():
             "mentalHealthIssues", "stressLevels"
         ]
         
-        missing_fields = [field for field in required_fields if field not in data or not data[field]]
+        missing_fields = [field for field in required_fields if field not in data or not data.get(field)]
         if missing_fields:
             return jsonify({"msg": f"Missing required fields: {', '.join(missing_fields)}"}), 400
             
         # Validate numeric fields
-        if not validate_numeric_string(data["age"], 1, 120):
+        if not validate_numeric_string(data.get("age", ""), 1, 120):
             return jsonify({"msg": "Invalid age value"}), 400
             
-        if not validate_numeric_string(data["height"]):
+        if not validate_numeric_string(data.get("height", "")):
             return jsonify({"msg": "Invalid height value"}), 400
             
-        if not validate_numeric_string(data["weight"]):
+        if not validate_numeric_string(data.get("weight", "")):
             return jsonify({"msg": "Invalid weight value"}), 400
             
         # Check for existing user details
         existing_details = UserDetail.query.filter_by(user_id=user.id).first()
         if existing_details:
-            return jsonify({"msg": "User details already exist"}), 400
+            return jsonify({"msg": "User details already exist. Please update the details instead."}), 400
             
         # Create new user details
         user_details = UserDetail(
             user_id=user.id,
-            age=data["age"],
-            height=data["height"],
-            weight=data["weight"],
-            periodRegularity=data["periodRegularity"],
-            periodDuration=data["periodDuration"],
-            heavyBleeding=data["heavyBleeding"],
-            severeCramps=data["severeCramps"],
-            pcosDiagnosis=data["pcosDiagnosis"],
-            hirsutism=data["hirsutism"],
-            hairLoss=data["hairLoss"],
-            acneSkinIssues=data["acneSkinIssues"],
-            weightGain=data["weightGain"],
-            fatigue=data["fatigue"],
-            exerciseFrequency=data["exerciseFrequency"],
-            dietType=data["dietType"],
-            processedFoodConsumption=data["processedFoodConsumption"],
-            sugarCravings=data["sugarCravings"],
-            waterIntake=data["waterIntake"],
-            sleepHours=data["sleepHours"],
-            sleepDisturbances=data["sleepDisturbances"],
-            mentalHealthIssues=data["mentalHealthIssues"],
-            stressLevels=data["stressLevels"],
+            age=data.get("age", ""),
+            height=data.get("height", ""),
+            weight=data.get("weight", ""),
+            periodRegularity=data.get("periodRegularity", ""),
+            periodDuration=data.get("periodDuration", ""),
+            heavyBleeding=data.get("heavyBleeding", ""),
+            severeCramps=data.get("severeCramps", ""),
+            pcosDiagnosis=data.get("pcosDiagnosis", ""),
+            hirsutism=data.get("hirsutism", ""),
+            hairLoss=data.get("hairLoss", ""),
+            acneSkinIssues=data.get("acneSkinIssues", ""),
+            weightGain=data.get("weightGain", ""),
+            fatigue=data.get("fatigue", ""),
+            exerciseFrequency=data.get("exerciseFrequency", ""),
+            dietType=data.get("dietType", ""),
+            processedFoodConsumption=data.get("processedFoodConsumption", ""),
+            sugarCravings=data.get("sugarCravings", ""),
+            waterIntake=data.get("waterIntake", ""),
+            sleepHours=data.get("sleepHours", ""),
+            sleepDisturbances=data.get("sleepDisturbances", ""),
+            mentalHealthIssues=data.get("mentalHealthIssues", ""),
+            stressLevels=data.get("stressLevels", ""),
             medicalHistory=data.get("medicalHistory", ""),
             medications=data.get("medications", ""),
             fertilityTreatments=data.get("fertilityTreatments", "")
@@ -102,27 +105,28 @@ def get_user_details():
     """Get details for the authenticated user."""
     try:
         current_user = get_jwt_identity()
-        user = User.query.filter_by(email=current_user["email"]).first()
+        user = User.query.filter_by(email=current_user).first()
         
         if not user:
-            return jsonify({"msg": "User not found"}), 404
+            return jsonify({"msg": "User not found"}), 401
             
         user_details = UserDetail.query.filter_by(user_id=user.id).first()
         
         if not user_details:
-            return jsonify({"msg": "User details not found"}), 404
+            return jsonify({"msg": "User details not found please add details."}), 404
             
-        return jsonify(user_details.to_dict()), 200
+        return jsonify({"msg": "User details retrieved successfully", "data": user_details.to_dict()}), 200
     except Exception as e:
         return jsonify({"msg": "Failed to retrieve user details", "error": str(e)}), 500 
     
+
 @user_bp.route('/user-details', methods=['PUT'])
 @jwt_required()
 def update_user_details():
     """Update details for the authenticated user."""
     try:
         current_user = get_jwt_identity()
-        user = User.query.filter_by(email=current_user["email"]).first()
+        user = User.query.filter_by(email=current_user).first()
         
         if not user:
             return jsonify({"msg": "User not found"}), 404
