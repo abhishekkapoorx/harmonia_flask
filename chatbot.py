@@ -13,21 +13,33 @@ groq_api_key = "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"
 llm = ChatGroq(groq_api_key=groq_api_key, model_name="llama3-8b-8192")
 
 # Define System Instructions
-system_message = SystemMessage(content="You are an AI health assistant for women, providing expert advice on health, diet, and well-being.")
+system_message = SystemMessage(
+    content="You are an AI health assistant for women, providing expert advice on health, diet, and well-being."
+)
+
 
 # Request model
 class ChatRequest(BaseModel):
     user_input: str
 
-async def chat(input):
+
+async def chat(input, user_details_dict):
     messages = [system_message, HumanMessage(content=input)]
     response = llm.invoke(messages)
     return response
 
 
 prompt_template_meal = PromptTemplate(
-    input_variables=['age', 'weight', 'height', 'veg_or_nonveg', 'disease', 'region', 'allergics'],
-    template='''You are a meal planning assistant. Generate a structured 7-day meal plan in JSON format based on the user's details:
+    input_variables=[
+        "age",
+        "weight",
+        "height",
+        "veg_or_nonveg",
+        "disease",
+        "region",
+        "allergics",
+    ],
+    template="""You are a meal planning assistant. Generate a structured 7-day meal plan in JSON format based on the user's details:
     
     - Age: {age}
     - Weight: {weight}
@@ -51,8 +63,9 @@ prompt_template_meal = PromptTemplate(
 
     Ensure all values are correctly formatted and realistic.
     and make sure that eggs are considered non-veg.
-    '''
+    """,
 )
+
 
 def get_meal_plan(age, weight, height, veg_or_nonveg, disease, region, allergics):
     """
@@ -61,15 +74,15 @@ def get_meal_plan(age, weight, height, veg_or_nonveg, disease, region, allergics
     chain_meal = LLMChain(llm=llm, prompt=prompt_template_meal)
 
     input_data = {
-        'age': age,
-        'weight': weight,
-        'height': height,
-        'veg_or_nonveg': veg_or_nonveg,
-        'disease': disease,
-        'region': region,
-        'allergics': allergics
+        "age": age,
+        "weight": weight,
+        "height": height,
+        "veg_or_nonveg": veg_or_nonveg,
+        "disease": disease,
+        "region": region,
+        "allergics": allergics,
     }
 
     results = chain_meal.run(input_data)
-    
+
     return results

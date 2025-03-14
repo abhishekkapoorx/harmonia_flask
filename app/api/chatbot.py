@@ -2,7 +2,11 @@
 Chatbot routes blueprint.
 """
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required
+
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
+from app.models.User import User
+from app.models.UserDetail import UserDetail
 from ..utils.validators import validate_numeric_string
 from chatbot import chat, get_meal_plan
 
@@ -21,8 +25,22 @@ async def chats():
         user_input = data.get("input")
         if not user_input or not isinstance(user_input, str):
             return jsonify({"msg": "Valid input text is required"}), 400
+        
+        current_user = get_jwt_identity()
+        user = User.query.filter_by(email=current_user).first()
 
-        response = await chat(user_input)
+        if not user:
+            return jsonify({"msg": "User not found"}), 401
+        
+        user_details = UserDetail.query.filter_by(user_id=user.id).first()
+
+        if not user_details:
+            return jsonify({"msg": "User details not found please add details."}), 404
+        
+        user_details_dict = user_details.to_dict()
+
+
+        response = await chat(user_input, user_details_dict)
         return jsonify({"response": str(response.content)})
     except Exception as e:
         return jsonify({"msg": "Chat processing failed", "error": str(e)}), 500
