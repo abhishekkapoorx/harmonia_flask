@@ -65,7 +65,7 @@ async def meal_planner():
         user_details_dict = user_details.to_dict()
         meal_plan = await get_meal_plan(user_details_dict)
 
-        if "error" in meal_plan:
+        if isinstance(meal_plan, dict) and "error" in meal_plan:
             return (
                 jsonify({"msg": "Meal planning failed", "error": meal_plan["error"]}),
                 500,

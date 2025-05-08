@@ -7,7 +7,6 @@ from pydantic import BaseModel, SecretStr
 from langchain_groq import ChatGroq
 from langchain.schema import HumanMessage, SystemMessage
 from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
 from langchain_core.output_parsers import JsonOutputParser
 import json
 from typing import List, Dict, Any
@@ -103,7 +102,7 @@ async def get_meal_plan(user_details_dict):
         )
 
         # Create the chain using the | operator
-        chain = prompt_template_meal | llm | parser
+        chain = prompt_template_meal | llm.with_structured_output(MealPlan)
 
         # Invoke the chain with user details
         response = chain.invoke({"user_details": json.dumps(user_details_dict)})
