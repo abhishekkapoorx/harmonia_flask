@@ -23,6 +23,8 @@ def register():
     """Register a new user."""
     try:
         data = request.json
+        print("Data received for registration:", data)  # Debugging line
+
         if not data:
             return jsonify({"msg": "No data provided"}), 400
 
@@ -35,8 +37,8 @@ def register():
         if not name or not email or not password:
             return jsonify({"msg": "Missing required fields"}), 400
 
-        if not validate_name(name):
-            return jsonify({"msg": "Invalid name format"}), 400
+        # if not validate_name(name):
+        #     return jsonify({"msg": "Invalid name format"}), 400
 
         # if not validate_email(email):
         #     return jsonify({"msg": "Invalid email format"}), 400

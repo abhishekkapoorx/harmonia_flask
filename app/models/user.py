@@ -7,9 +7,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app.extensions import db
 from sqlalchemy.dialects.postgresql import ENUM
 from uuid import uuid4
+from sqlalchemy_serializer import SerializerMixin
 
 
-class User(db.Model):
+class User(db.Model, SerializerMixin):
     """User model for authentication."""
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
@@ -21,6 +22,9 @@ class User(db.Model):
         ENUM("user", "doctor", "moderator", "pharmacist", "admin", name="user_role"),
         default="user",
     )
+    
+    # Serialization rules
+    serialize_rules = ('-password', '-chat.user')
 
     def __init__(self, name, email, password):
         self.name = name

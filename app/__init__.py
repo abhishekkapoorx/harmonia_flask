@@ -5,7 +5,7 @@ Application factory module.
 from flask import Flask
 from flask_migrate import Migrate
 from app.extensions import init_extensions, jwt, db
-from app.api import auth_bp, chatbot_bp, user_bp
+from app.api import auth_bp, chatbot_bp, user_bp, chat_bp
 
 
 def create_app(config_name="default"):
@@ -34,6 +34,7 @@ def create_app(config_name="default"):
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(user_bp, url_prefix="/user")
     app.register_blueprint(chatbot_bp, url_prefix="/chatbot")
+    app.register_blueprint(chat_bp, url_prefix="/chat")
 
     # a protected route is accessed. This should return any python object on a
     # successful lookup, or None if the lookup failed for any reason (for example

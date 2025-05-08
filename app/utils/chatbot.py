@@ -27,11 +27,29 @@ class ChatRequest(BaseModel):
 
 async def chat(input, user_details_dict):
     # Define System Instructions
-    system_message = SystemMessage(
-        content="You are an AI health assistant for women, providing expert advice on health, diet, and well-being."
+    # Create prompt template for chat
+    prompt_template_chat = PromptTemplate(
+        input_variables=["user_input", "user_details"],
+        template="""You are an AI menstrual health assistant for women. Provide expert advice on health, diet, and well-being based on the user's input and details:
+        
+        User Input: {user_input}
+        User Details: {user_details}
+
+        Ask questions to the user to get more information about their menstrual health.
+        If the user is not comfortable with answering a question, ask them to skip it.
+
+        Tailor the response to the user's details.
+        If the user is not pregnant, do not mention pregnancy or childbirth.
+        If the user is pregnant, do not mention menstruation.
+
+        At last always prescribe to the user to consult a doctor if they have any serious concerns.
+
+        """
     )
-    messages = [system_message, HumanMessage(content=input)]
-    response = llm.invoke(messages)
+
+    chat_chain = prompt_template_chat | llm
+
+    response = chat_chain.invoke({"user_input": input, "user_details": json.dumps(user_details_dict)})
     return response.content
 
 
@@ -44,9 +62,9 @@ class Meal(BaseModel):
 
 class DayMeals(BaseModel):
     """Meals for a single day"""
-    Breakfast: List[Meal]
-    Lunch: List[Meal]
-    Dinner: List[Meal]
+    Breakfast: Meal
+    Lunch: Meal
+    Dinner: Meal
 
 
 class MealPlan(BaseModel):

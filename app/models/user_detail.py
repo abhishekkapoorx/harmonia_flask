@@ -56,7 +56,7 @@ class UserDetail(db.Model, SerializerMixin):
     medications = db.Column(db.String(255), nullable=True)
     fertilityTreatments = db.Column(db.String(255), nullable=True)
 
-    createdAt = db.Column(db.DateTime, default=datetime.utcnow)
+    createdAt = db.Column(db.DateTime, default=datetime.now)
 
     def __init__(self, **kwargs):
         """Initialize UserDetail with provided parameters."""
