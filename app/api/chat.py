@@ -57,6 +57,32 @@ def get_chat(chat_id):
         return jsonify({"msg": "Failed to retrieve chat", "error": str(e)}), 500
 
 
+@chat_bp.route('/<chat_id>/get-messages', methods=['GET'])
+@jwt_required()
+def get_messages(chat_id):
+    """Get all messages for a specific chat."""
+    try:
+        current_user_email = get_jwt_identity()
+        user = User.query.filter_by(email=current_user_email).first()
+        
+        if not user:
+            return jsonify({"msg": "User not found"}), 401
+        
+        chat = Chat.query.filter_by(id=chat_id, user_id=user.id).first()
+        
+        if not chat:
+            return jsonify({"msg": "Chat not found"}), 404
+        
+        messages = Message.query.filter_by(chat_id=chat_id).order_by(Message.created_at).all()
+        
+        return jsonify({
+            "chat_id": chat_id,
+            "messages": [message.to_dict() for message in messages]
+        }), 200
+    except Exception as e:
+        return jsonify({"msg": "Failed to retrieve messages", "error": str(e)}), 500
+
+
 @chat_bp.route('/create-chat', methods=['POST'])
 @jwt_required()
 def create_chat():
