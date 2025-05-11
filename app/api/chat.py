@@ -204,3 +204,47 @@ async def send_message(chat_id):
         return jsonify({"msg": "Failed to send message", "error": str(e)}), 500
 
 
+@chat_bp.route('/rename-chat', methods=['PUT'])
+@jwt_required()
+def rename_chat():
+    """Rename a specific chat using chat_id from request body."""
+    try:
+        current_user_email = get_jwt_identity()
+        user = User.query.filter_by(email=current_user_email).first()
+        
+        if not user:
+            return jsonify({"msg": "User not found"}), 401
+        
+        data = request.get_json() or {}
+        chat_id = data.get('chat_id')
+        new_title = data.get('title')
+        
+        if not chat_id:
+            return jsonify({"msg": "Chat ID is required"}), 400
+            
+        if not new_title:
+            return jsonify({"msg": "New title is required"}), 400
+            
+        if len(new_title) > 100:
+            return jsonify({"msg": "Chat title too long (max 100 characters)"}), 400
+        
+        chat = Chat.query.filter_by(id=chat_id, user_id=user.id).first()
+        
+        if not chat:
+            return jsonify({"msg": "Chat not found"}), 404
+        
+        # Update chat title
+        chat.title = new_title
+        chat.updated_at = func.now()
+        
+        db.session.commit()
+        
+        return jsonify({
+            "msg": "Chat renamed successfully",
+            "chat": chat.to_dict()
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Failed to rename chat", "error": str(e)}), 500
+
+
