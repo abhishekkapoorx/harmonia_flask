@@ -10,14 +10,17 @@ import pandas as pd
 import os
 import traceback
 import sys
+import io
 # Try importing optional dependencies with error handling
 try:
     import torch
     import cv2
+    from ultralytics import YOLO
+    from PIL import Image
     YOLO_AVAILABLE = True
 except ImportError:
     YOLO_AVAILABLE = False
-    print("Warning: torch or cv2 not available. Image analysis features will be disabled.")
+    print("Warning: torch, cv2, ultralytics, or PIL not available. Image analysis features will be disabled.")
 
 from werkzeug.utils import secure_filename
 import json
@@ -32,7 +35,13 @@ predict_bp = Blueprint('predict', __name__)
 
 # Load the model at blueprint creation
 MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'ai_models', 'pcos_best_model_pipeline.pkl')
+YOLO_MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'ai_models', 'best.pt')
+
+# PCOS regression model
 model_pipeline = None
+
+# YOLO model for ultrasound images
+yolo_model = None
 
 def load_model(model_path=MODEL_PATH):
     """Load the saved model pipeline"""
@@ -41,12 +50,21 @@ def load_model(model_path=MODEL_PATH):
     print(f"Loaded model: {loaded_pipeline['model_name']}")
     return loaded_pipeline
 
-# Try to load the model
+# Try to load the regression model
 try:
     model_pipeline = load_model()
 except Exception as e:
-    print(f"Error loading model: {str(e)}")
+    print(f"Error loading regression model: {str(e)}")
     model_pipeline = None
+
+# Try to load the YOLO model if dependencies are available
+if YOLO_AVAILABLE:
+    try:
+        yolo_model = YOLO(YOLO_MODEL_PATH)
+        print(f"Loaded YOLO model from {YOLO_MODEL_PATH}")
+    except Exception as e:
+        print(f"Error loading YOLO model: {str(e)}")
+        yolo_model = None
 
 
 def preprocess_input_data(data_dict):
@@ -194,7 +212,136 @@ def predict_pcos():
 @jwt_required()
 def predict_pcos_ultrasound():
     """Predict PCOS based on ultrasound image and related parameters."""
-    pass
+    try:
+        # Verify user
+        current_user_email = get_jwt_identity()
+        user = User.query.filter_by(email=current_user_email).first()
+        
+        if not user:
+            return jsonify({"msg": "User not found"}), 401
+        
+        # Check if YOLO model is available
+        if not YOLO_AVAILABLE or yolo_model is None:
+            return jsonify({
+                "success": False,
+                "msg": "Ultrasound image analysis is not available"
+            }), 503  # Service Unavailable
+        
+        # Check if the request contains an image file
+        if 'image' not in request.files:
+            return jsonify({
+                "success": False,
+                "msg": "No image file provided"
+            }), 400
+        
+        file = request.files['image']
+        
+        # Check if the file is empty
+        if file.filename == '':
+            return jsonify({
+                "success": False,
+                "msg": "Empty file provided"
+            }), 400
+        
+        # Get original filename (or use default if None)
+        original_filename = file.filename or "uploaded_file"
+        
+        # Read the image file directly into memory
+        img_bytes = file.read()
+        img = Image.open(io.BytesIO(img_bytes))
+        
+        # Run inference with YOLO model directly on the PIL image
+        results = yolo_model(img)
+        
+        # Process the results
+        result = results[0]  # Get the first result
+        
+        # Debug print results
+        print(f"Result properties: {dir(result)}")
+        print(f"Result probs: {result.probs}")
+        
+        # Get the probabilities
+        probs = result.probs
+        
+        # Get class names
+        class_names = result.names  # Dictionary of class_id: class_name
+        print(f"Class names: {class_names}")
+        
+        # Get top 1 class and confidence
+        top1_class_id = int(probs.top1)
+        top1_confidence = float(probs.top1conf)
+        
+        # Convert probability tensor to list of floats
+        class_probs = []
+        for i, prob in enumerate(probs.data):
+            class_probs.append({
+                "class_id": i,
+                "class_name": class_names.get(i, f"Class {i}"),
+                "probability": float(prob)
+            })
+        
+        # Get the class name for top1 prediction
+        top1_class_name = class_names.get(top1_class_id, f"Class {top1_class_id}")
+        
+        # Determine prediction
+        # Assuming class 0 is "normal" and class 1 is "pcos" (adjust accordingly)
+        if top1_class_id == 0 or top1_class_name.lower() == "infected":
+            prediction = 0
+            prediction_label = "PCOS"
+            risk_level = "high" if top1_confidence > 0.75 else "moderate"
+            recommendation = "Please consult with a healthcare provider for further evaluation and management."
+        else:
+            prediction = 1
+            prediction_label = "No PCOS"
+            risk_level = "low"
+            recommendation = "Continue routine health monitoring."
+        
+        # Prepare metadata
+        metadata = {
+            "filename": original_filename,
+            "top1_class_id": top1_class_id,
+            "top1_class_name": top1_class_name,
+            "top1_confidence": top1_confidence,
+            "class_probabilities": class_probs
+        }
+        
+        # Store prediction in database
+        # prediction_record = PCOSPrediction(
+        #     user_id=user.id,
+        #     input_data=metadata,
+        #     prediction=prediction,
+        #     probability=top1_confidence,
+        #     risk_level=risk_level,
+        #     recommendation=recommendation
+        # )
+        
+        # db.session.add(prediction_record) 
+        
+        # db.session.commit()
+        
+        # Prepare response
+        response = {
+            "success": True,
+            "prediction": prediction,
+            "prediction_label": prediction_label,
+            "confidence": top1_confidence,
+            "risk_level": risk_level,
+            "recommendation": recommendation,
+            "class_probabilities": class_probs,
+            # "prediction_id": prediction_record.id
+        }
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        error_traceback = traceback.format_exc()
+        print(f"ERROR in predict_pcos_ultrasound: {str(e)}", file=sys.stderr)
+        print(f"Traceback: {error_traceback}", file=sys.stderr)
+        return jsonify({
+            "success": False,
+            "msg": "Failed to process ultrasound image",
+            "error": str(e)
+        }), 500
 
 
 @predict_bp.route('/model-info', methods=['GET'])
