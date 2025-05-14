@@ -35,7 +35,6 @@ class PCOSPrediction(db.Model, SerializerMixin):
         self.prediction = prediction
         self.probability = probability
         self.risk_level = risk_level
-        self.recommendation = recommendation
 
     def __repr__(self):
         return f"<PCOSPrediction {self.id} for user {self.user_id}>"
@@ -50,6 +49,5 @@ class PCOSPrediction(db.Model, SerializerMixin):
             "prediction_label": "PCOS" if self.prediction == 1 else "No PCOS",
             "probability": self.probability,
             "risk_level": self.risk_level,
-            "recommendation": self.recommendation,
             "created_at": self.created_at.isoformat() if self.created_at else None
         } 

@@ -266,3 +266,49 @@ def get_user_predictions():
             "msg": "Failed to get predictions",
             "error": str(e)
         }), 500
+
+
+@predict_bp.route('/predictions/<prediction_id>', methods=['GET'])
+@jwt_required()
+def get_prediction_by_id(prediction_id):
+    """Get a specific prediction by ID."""
+    try:
+        # Verify user
+        current_user_email = get_jwt_identity()
+        user = User.query.filter_by(email=current_user_email).first()
+        
+        if not user:
+            return jsonify({"msg": "User not found"}), 401
+        
+        # Get the prediction
+        prediction = PCOSPrediction.query.filter_by(id=prediction_id).first()
+        
+        # Check if prediction exists
+        if not prediction:
+            return jsonify({
+                "success": False,
+                "msg": "Prediction not found"
+            }), 404
+            
+        # Check if prediction belongs to the user
+        if prediction.user_id != user.id:
+            return jsonify({
+                "success": False,
+                "msg": "You don't have permission to access this prediction"
+            }), 403
+        
+        # Return the prediction
+        return jsonify({
+            "success": True,
+            "prediction": prediction.to_dict()
+        })
+        
+    except Exception as e:
+        error_traceback = traceback.format_exc()
+        print(f"ERROR in get_prediction_by_id: {str(e)}", file=sys.stderr)
+        print(f"Traceback: {error_traceback}", file=sys.stderr)
+        return jsonify({
+            "success": False,
+            "msg": "Failed to get prediction",
+            "error": str(e)
+        }), 500
